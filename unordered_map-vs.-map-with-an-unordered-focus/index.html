@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Embedded and C&#43;&#43; developer working and living in Gothenburg, Sweden.">
+    
+    <link rel="shortcut icon" href="https://example.com/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>unordered_map vs. map (with an unordered focus)</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://example.com">hilmer.io</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="/" title="posts">posts</a>
+            </li><li>
+                <a href="/about/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>unordered_map vs. map (with an unordered focus)</h1>
+        <div>
+                <time>March 2, 2021</time>
+            </div>
+    </header><p>Why am prone to using <code>std::unordered_map</code> over <code>std::map</code>?</p>
+<p>It all comes down to performance. The <code>map</code> is normally implemented as a binary search tree and thus resulting in a worst case search time of <strong>O(log n)</strong>, which is great.</p>
+<p>The worst case search time for the <code>unordered_map</code> is <strong>O(n)</strong>. So why do I prefer it? Because the <code>unordered_map</code> is implemented as a hash table and the average search time for the <code>unordered_map</code> is constant, i.e. <strong>O(1)</strong>.</p>
+<p>If your data needs to stay in a specific order, the <code>unordered_map</code> is not the way to go. It is almost like you can hear it on its name. Also, the <code>unordered_map</code> generally use more memory, and inserting and removing elements can be slower compared to the regular map. For lookups, the <code>unordered_map</code> is outstanding.</p>
+<p>If we lift the hood of the <code>unordered_map</code>, what would we find? Of course that depends on the compiler, but most likely a vector containing buckets. So what is bucket now? From <a href="http://www.cplusplus.com/reference/unordered_map/unordered_map/bucket/">cppreference</a>:</p>
+<blockquote>
+<p>&ldquo;A bucket is a slot in the container&rsquo;s internal hash table to which elements are assigned based on the hash value of their key&rdquo;.</p>
+</blockquote>
+<p>When doing a lookup, your key is hashed, and the hashed value will point you to a bucket. The bucket most likely contain a linked list with all elements whose hashed key value corresponds to that bucket.</p>
+<p>Here is an illustration I made using the <a href="http://www.cplusplus.com/reference/unordered_map/unordered_map/bucket">bucket example</a>:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">,</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">mymap</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s">&#34;us&#34;</span><span class="p">,</span><span class="s">&#34;United States&#34;</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s">&#34;uk&#34;</span><span class="p">,</span><span class="s">&#34;United Kingdom&#34;</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s">&#34;fr&#34;</span><span class="p">,</span><span class="s">&#34;France&#34;</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s">&#34;de&#34;</span><span class="p">,</span><span class="s">&#34;Germany&#34;</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span></code></pre></div><p><img src="/static/buckets.png" alt="unordered_map bucket example"></p>
+<p>When the number of elements in the <code>unordered_map</code> equals or exceeds the number of buckets, the <code>unordered_map</code> is resized. The reason is to avoid the linked list to become to large, which would result in worse performance. This is what is called the load balance.</p>
+<p>When the elements and the number of buckets are equal, the load balance is <code>1.0</code>. When the load balance exceeds <code>1.0</code> the table needs to be rehashed, which is costly. That would partly explain why inserting elements can be slower compared to the traditional map.</p>
+<p>In the example above, the load balance would be: <code>4 elements/5 buckets = 0.8</code></p>
+<p>With some imagination you can conclude that the lower the load balance, the lower the probability that several elements end up in the same bucket. Thus lowering the average search time.</p>
+</article>
+
+        </main><footer id="footer">
+    Copyright © 2022 hilmer.io
+</footer>
+</body>
+</html>

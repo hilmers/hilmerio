@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Embedded and C&#43;&#43; developer working and living in Gothenburg, Sweden.">
+    
+    <link rel="shortcut icon" href="https://example.com/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Reading file input in C&#43;&#43;</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://example.com">hilmer.io</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="/" title="posts">posts</a>
+            </li><li>
+                <a href="/about/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Reading file input in C&#43;&#43;</h1>
+        <div>
+                <time>December 17, 2020</time>
+            </div>
+    </header><p>This is part of a series of articles I wrote after taking part in the advent of code challenge.</p>
+<p>All of the problems were dependent on some input, and for the sake of keeping the code clean I put the input in a text file outside of the source code.
+Day two I stumbled over <a href="https://stackoverflow.com/questions/7868936/read-file-line-by-line-using-ifstream-in-c">this</a> stackoverflow post regarding reading from an input file and it has been a part of almost all the solutions.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">std</span><span class="o">::</span><span class="n">ifstream</span> <span class="n">is</span><span class="p">(</span><span class="n">input_filename</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">line</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">while</span> <span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">getline</span><span class="p">(</span><span class="n">is</span><span class="p">,</span> <span class="n">line</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// parse line by line and create data structure.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><p>This gave me a great way of handling every line in the provided input.</p>
+<p>I could stop here. This was enough for reading the inputs for the 6 challenges I battled, but I was a bit curios to go a bit deeper, and try understand what is actually going on when creating a <code>std::ifstream</code> and looping over it with <code>std::getline</code>. Like how does it work really, you have the input file, which basically is some amount of bytes in memory (like everything else), and with one object creation and a function we can go through each line in that file. I have some intuition on how it probably works, but I think if I studied the mechanics of the <code>ifstream</code> object it would be a bit more clear.</p>
+<p>From <a href="https://en.cppreference.com/w/cpp/io/basic_ifstream">cppreference.com</a> we can read that:</p>
+<blockquote>
+<p>&ldquo;ifstream implements high-level input operations on file-based streams&rdquo;.</p>
+</blockquote>
+<p><a href="http://cplusplus.com">cplusplus.com</a> explains the <code>std::ifstream</code> like this:</p>
+<blockquote>
+<p>&ldquo;Objects of this class maintain a filebuf object as their internal stream buffer, which performs input/output operations on the file they are associated with (if any).&rdquo;</p>
+</blockquote>
+<p>So if we would like to implement our own <code>ifstream</code>, it could look something like this (non template version):</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">ifstream</span> <span class="o">:</span> <span class="k">public</span> <span class="n">istream</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="n">ifstream</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="p">...</span>
+</span></span><span class="line"><span class="cl">  <span class="k">private</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">  <span class="n">std</span><span class="o">::</span><span class="n">filebuf</span> <span class="n">internal_stream_buffer</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>Where <code>std::filebuf</code> is a specialization defined in header <code>&lt;streambuf&gt;: basic_filebuf&lt;char&gt;</code>.</p>
+<p>The created <code>std::filebuf</code> object needs to be associated to a file by calling member open. So for our implementation of ifstream to work with the one line in my advent of code solutions the constructor needs to call open on the internal_stream_buffer.</p>
+<p>Remember, this is only my simple implementation, in the std libraries <code>ifstream</code>, the filename is optional and you can call open later, after the object is created.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">ifstream</span><span class="o">::</span><span class="n">ifstream</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">filename</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="n">internal_stream_buffer</span><span class="p">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">ifstream</span><span class="o">::~</span><span class="n">ifstream</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">internal_stream_buffer</span><span class="p">.</span><span class="n">close</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>That is how the tip of the iceberg would look. How does this work with the <a href="https://en.cppreference.com/w/cpp/string/basic_string/getline">std::getline</a> function then?</p>
+<blockquote>
+<p>&ldquo;<code>getline</code> reads characters from an input stream and places them into a string.&rdquo;</p>
+</blockquote>
+<p>If we were to implement our own simple, let&rsquo;s call it <code>nonstd::getline()</code>. It could look like this:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="k">namespace</span> <span class="n">nonstd</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="n">ifstream</span><span class="o">&amp;</span> <span class="n">getline</span><span class="p">(</span><span class="n">ifstream</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">str</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="n">str</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">	<span class="kt">char</span> <span class="n">c</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="k">while</span> <span class="p">(</span><span class="n">input</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">ch</span> <span class="o">!=</span> <span class="sc">&#39;\n&#39;</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="n">str</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">c</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="n">input</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> 
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>When <code>getline</code> is done, both the <code>ifstream</code> and string objects passed as references has changed (if characters where found). The <code>ifstream</code> object is changed in the regard that a complete line is now extracted. So when we call <code>getline</code> on the same object the next time, it will not have the extracted line anymore and thus getting the next line. The <code>str</code> object is changed and filled with characters, if any where found before encountering the newline (&rsquo;\n')</p>
+<p>Of course you can go deeper than this for a more thorough understanding, but that can be the topic for another post, since I think that hole is quite deep.</p>
+</article>
+
+        </main><footer id="footer">
+    Copyright © 2022 hilmer.io
+</footer>
+</body>
+</html>

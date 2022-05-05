@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://example.com/</loc>
+    <lastmod>2021-07-02T22:46:37+00:00</lastmod>
+  </url><url>
+    <loc>https://example.com/posts/</loc>
+    <lastmod>2021-07-02T22:46:37+00:00</lastmod>
+  </url><url>
+    <loc>https://example.com/who-handled-my-signal/</loc>
+    <lastmod>2021-07-02T22:46:37+00:00</lastmod>
+  </url><url>
+    <loc>https://example.com/unordered_map-vs.-map-with-an-unordered-focus/</loc>
+    <lastmod>2021-03-02T22:02:45+00:00</lastmod>
+  </url><url>
+    <loc>https://example.com/sort-anything-with-stdsort-and-a-comparator/</loc>
+    <lastmod>2020-12-20T19:40:20+00:00</lastmod>
+  </url><url>
+    <loc>https://example.com/parsing-text-with-regex-in-c-/</loc>
+    <lastmod>2020-12-19T20:32:34+00:00</lastmod>
+  </url><url>
+    <loc>https://example.com/reading-file-input-in-c-/</loc>
+    <lastmod>2020-12-17T19:03:22+00:00</lastmod>
+  </url><url>
+    <loc>https://example.com/advent-of-code/</loc>
+    <lastmod>2020-12-16T18:22:30+00:00</lastmod>
+  </url><url>
+    <loc>https://example.com/categories/</loc>
+  </url><url>
+    <loc>https://example.com/tags/</loc>
+  </url>
+</urlset>

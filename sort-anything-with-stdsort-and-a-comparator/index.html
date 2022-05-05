@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Embedded and C&#43;&#43; developer working and living in Gothenburg, Sweden.">
+    
+    <link rel="shortcut icon" href="https://example.com/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Sort anything with std::sort and a comparator</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://example.com">hilmer.io</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="/" title="posts">posts</a>
+            </li><li>
+                <a href="/about/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Sort anything with std::sort and a comparator</h1>
+        <div>
+                <time>December 20, 2020</time>
+            </div>
+    </header><p>This is part of the advent of code posts, so the puzzles referred can be viewed at <a href="https://adventofcode.com/2020">https://adventofcode.com/2020</a></p>
+<p>For the day 5 part 2 puzzle I read the description a bit too fast (again). I thought I had to give the &ldquo;binary space partitioning seat id&rdquo; as the answer. So when I answered <code>&quot;BBFFBBFRLL&quot;</code> both me and the Advent of code website was a bit confused.</p>
+<p>I stopped what I was doing and read the instructions carefully and answered <code>524</code>. Now everyone was happy.</p>
+<p>In my solution I used <code>std::sort</code> on all the set IDs and then went through the result to see where the gap was. Before I found the more simple solution I used <code>std::sort</code> with the boarding pass strings and a lambda function comparing the results. As I found out, it wasn&rsquo;t useful but at least I learnt something.</p>
+<p>This is how I used it:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">boarding_passes</span> <span class="o">=</span>
+</span></span><span class="line"><span class="cl">        <span class="n">CreateVectorFromFile</span><span class="p">(</span><span class="s">&#34;input.txt&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="n">std</span><span class="o">::</span><span class="n">sort</span><span class="p">(</span><span class="n">boarding_passes</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span> <span class="n">boarding_passes</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span>
+</span></span><span class="line"><span class="cl">          <span class="p">[]</span> <span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">s1</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">s2</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="k">return</span> <span class="p">(</span><span class="n">GetSeatId</span><span class="p">(</span><span class="n">s1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">GetSeatId</span><span class="p">(</span><span class="n">s2</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">           <span class="p">});</span>
+</span></span></code></pre></div><p>Deep down I knew about this, but I had never tried it. As long as you can produce a predicate from comparing the items in the list. The result when printing the now sorted <code>boarding_passes</code>:</p>
+<p>Result:</p>
+<pre tabindex="0"><code>...
+BFBBBBBRRL
+BFBBBBBRRR
+BBFFFFFLLL
+BBFFFFFLLR
+BBFFFFFLRL
+BBFFFFFLRR
+BBFFFFFRLL
+...
+</code></pre></article>
+
+        </main><footer id="footer">
+    Copyright © 2022 hilmer.io
+</footer>
+</body>
+</html>

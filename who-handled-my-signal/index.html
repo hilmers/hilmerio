@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Embedded and C&#43;&#43; developer working and living in Gothenburg, Sweden.">
+    
+    <link rel="shortcut icon" href="https://example.com/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/style.min.css">
+
+    <title>Who Handled My Signal?</title>
+</head>
+<body><header id="banner">
+    <h2><a href="https://example.com">hilmer.io</a></h2>
+    <nav>
+        <ul>
+            <li>
+                <a href="/" title="posts">posts</a>
+            </li><li>
+                <a href="/about/" title="about">about</a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main id="content">
+<article>
+    <header id="post-header">
+        <h1>Who Handled My Signal?</h1>
+        <div>
+                <time>July 2, 2021</time>
+            </div>
+    </header><p>I’ve written a fair share of signal handlers in my life, some good and some worse. This time I didn’t even have to write one, but I still managed to mess it up.</p>
+<h2 id="blocking-signals-and-a-systemd-event-loop">Blocking signals and a systemd event loop</h2>
+<p>I was working on an application written in c++, running on an embedded system. On the embedded system my application had to use some IPC (Inter Process Communication) and the system had support for dbus communication. So I decided to run the application using the <a href="https://www.freedesktop.org/software/systemd/man/sd-event.html">systemd event loop</a>. To exit the event loop, and thus shutting down the process, you just had to let the systemd event loop handle the SIGTERM. For a proper introduction to the sd-event-loop I suggest reading Lennart Poetterings <a href="http://0pointer.net/blog/introducing-sd-event.html">blog post</a> on the subject.</p>
+<p>To not let the default signal handler (that all signals have) step in and handle the signal, you add a block on the desired signals with the help of sigprocmask(). Then you create a new  signal event source and adds it to the event loop: All this is done with the help of <a href="https://www.freedesktop.org/software/systemd/man/sd_event_add_signal.html">sd_event_add_signal()</a>. Here follows an example implementing a simple application, listening on the signal SIGINT (interrupt, i.e. Ctrl-C) with the help of the systemd event loop.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;systemd/sd-daemon.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;systemd/sd-event.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&#34;spdlog/spdlog.h&#34;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&#34;spdlog/async.h&#34;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&#34;spdlog/sinks/basic_file_sink.h&#34;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;cstring&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">signal_handler</span><span class="p">(</span><span class="n">sd_event_source</span><span class="o">*</span> <span class="n">es</span><span class="p">,</span> <span class="k">const</span> <span class="k">struct</span> <span class="nc">signalfd_siginfo</span><span class="o">*</span> <span class="n">si</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="cm">/*userdata*/</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">spdlog</span><span class="o">::</span><span class="n">info</span><span class="p">(</span><span class="s">&#34;Signal handler: Got {}&#34;</span><span class="p">,</span> <span class="n">strsignal</span><span class="p">(</span><span class="n">si</span><span class="o">-&gt;</span><span class="n">ssi_signo</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sd_event_exit</span><span class="p">(</span><span class="n">sd_event_source_get_event</span><span class="p">(</span><span class="n">es</span><span class="p">),</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">bool</span> <span class="nf">SetupSignalHandler</span><span class="p">(</span><span class="n">sd_event</span><span class="o">*</span> <span class="n">event</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sigset_t</span> <span class="n">ss</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Exclude all signals from defined signal set (ss)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">sigemptyset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ss</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Add SIGINT to signal sets
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">sigaddset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ss</span><span class="p">,</span> <span class="n">SIGINT</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Add signal mask to calling thread.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// SIGINT is now blocked in this thread.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">sigprocmask</span><span class="p">(</span><span class="n">SIG_BLOCK</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">ss</span><span class="p">,</span> <span class="k">nullptr</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Let the sd event loop handle SIGINT
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">sd_event_add_signal</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="k">nullptr</span><span class="p">,</span> <span class="n">SIGINT</span><span class="p">,</span> <span class="n">signal_handler</span><span class="p">,</span> <span class="k">nullptr</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sd_event</span><span class="o">*</span> <span class="n">event</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">auto</span> <span class="n">logfile</span> <span class="o">=</span> <span class="n">spdlog</span><span class="o">::</span><span class="n">basic_logger_mt</span><span class="o">&lt;</span><span class="n">spdlog</span><span class="o">::</span><span class="n">async_factory</span><span class="o">&gt;</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">    		<span class="s">&#34;file_logger&#34;</span><span class="p">,</span> <span class="s">&#34;logs/log.txt&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Acquire default event loop object (for calling thread).
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="kt">int</span> <span class="n">event_loop_aquired</span> <span class="o">=</span> <span class="n">sd_event_default</span><span class="p">(</span><span class="o">&amp;</span><span class="n">event</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">event_loop_aquired</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">logfile</span><span class="o">-&gt;</span><span class="n">critical</span><span class="p">(</span><span class="s">&#34;Acquiring event loop failed&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">EXIT_FAILURE</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">SetupSignalHandler</span><span class="p">(</span><span class="n">event</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">logfile</span><span class="o">-&gt;</span><span class="n">critical</span><span class="p">(</span><span class="s">&#34;Failed to setup signal handler&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">EXIT_FAILURE</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">spdlog</span><span class="o">::</span><span class="n">info</span><span class="p">(</span><span class="s">&#34;Application started&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">event_loop_exit_code</span> <span class="o">=</span> <span class="n">sd_event_loop</span><span class="p">(</span><span class="n">event</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">spdlog</span><span class="o">::</span><span class="n">info</span><span class="p">(</span><span class="s">&#34;Application is shutting down&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">event_loop_exit_code</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">logfile</span><span class="o">-&gt;</span><span class="n">critical</span><span class="p">(</span><span class="s">&#34;Bad event loop exit code: {d}&#34;</span><span class="p">,</span> <span class="n">event_loop_exit_code</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">EXIT_FAILURE</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">event_loop_aquired</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sd_event_unref</span><span class="p">(</span><span class="n">event</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">EXIT_SUCCESS</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>Apart from the systemd stuff, I also added spdlog to simplify and prettify the logging part.</p>
+<p>Looks pretty sweet, but I should probably check that it does what I hope it does.</p>
+<p>Console output:</p>
+<pre tabindex="0"><code>[2020-07-02 21:24:40.564] [info] Application started
+^C
+</code></pre><p>Okey, that didn’t go as expected. This <code>sd_event_loop</code> doesn’t seem to work at all as expected. What could possibly be the problem here? It looks like signals default handler goes in and handles the application shutdown even though it is clearly blocked. A wise friend of mine said that I should inspect my process <code>SigBlk</code> (signal block) in <code>/proc</code>. A place where you can find details regarding your running processes.</p>
+<pre tabindex="0"><code>❯ ps -a
+PID TTY          TIME CMD
+15646 pts/1    00:00:00 nvim
+16441 pts/20   00:00:00 event_loop
+16443 pts/21   00:00:00 ps
+</code></pre><p>There we have it, our event_loop running with PID 16441. Let&rsquo;s inspect it further.</p>
+<pre tabindex="0"><code>❯ cat /proc/16441/status
+Name: event_loop
+Umask:  0002
+State:  S (sleeping)
+......
+......
+CoreDumping:  0
+Threads:  2
+SigQ: 0/31666
+SigPnd: 0000000000000000
+ShdPnd: 0000000000000000
+SigBlk: 0000000000000002
+SigIgn: 0000000000000000
+.....
+.....
+</code></pre><p>I had a look, and sure, it looked good. My process had <code>SigBlk: 0000000000000002</code> which corresponds to block SIGINT, which was my intent (great <a href="https://unix.stackexchange.com/questions/85364/how-can-i-check-what-signals-a-process-is-listening-to">post</a> on stackoverflow on how to interpret SigBlk). So why isn’t it blocked? And why is it handled by the default signal handler?</p>
+<p>The same friend then said, make sure you don’t have any process threads that don’t have the same mask. “Yeah, my application only has one thread&quot;, was my response. That was a lie. But in my defence, I didn’t know it was a lie, I just had no idea.</p>
+<p>If you have a look in the output above, you can actually see that the process has two threads, it clearly says so: <code>Threads: 2</code>, but sometimes your blind. This has to be some other issue, I thought to myself.</p>
+<p>Eventually I ran out of ideas. I stripped everything in the code apart from my custom signal handler and the <code>sd_event_loop</code>. To my relief and surprise the handler worked. Maybe there is a possibilty another thread is spawned in the original solution after all. I followed my friends advice and had a look at the process tasks, now running with the original solution again.</p>
+<pre tabindex="0"><code>❯ ls /proc/16441/task
+16441  16442
+</code></pre><p>Oh shit, there we have it. Our process spawns another thread. Let&rsquo;s inspect the spawned threads <code>SigBlk</code>.</p>
+<pre tabindex="0"><code>❯ cat /proc/16441/task/16442/status
+Name: event_loop
+Umask:  0002
+State:  S (sleeping)
+......
+......
+CoreDumping:  0
+Threads:  2
+SigQ: 0/31666
+SigPnd: 0000000000000000
+ShdPnd: 0000000000000000
+SigBlk: 0000000000000000
+SigIgn: 0000000000000000
+.....
+.....
+</code></pre><p>I believe we just found out who handled my signal, it was dear old 16442.</p>
+<h2 id="the-solution">The solution</h2>
+<p>You may have guessed who spawned the new thread. Of course it was the fancy logging library that I use.</p>
+<p>The function: <code>spdlog::basic_logger_mt&lt;spdlog::async_factory&gt;(...)</code> spawns a new thread and since it is called before <code>sigprocmask</code> is used to block <code>SIGINT</code> the child thread has no idea that it shouldn&rsquo;t handle the incoming <code>SIGINT</code>.</p>
+<p>What in gods name is this guy doing, you may have asked yourself. In my defence, this is a greatly simplified implementation of the actual code I wrote.</p>
+<p>If I were to summarazise this post in two sentences it would be:</p>
+<blockquote>
+<p>What happens when a thread is spawned? It inherits its parents SigBlk. If parents SigBlk is later updated, the child will have no idea about it.</p>
+</blockquote>
+<p>Fair enough, the hard part is knowing that a thread has been spawned if you explicitly don&rsquo;t do it yourself. So, how should the code look like? One easy fix would be to avoid the funtion call <code>spdlog::basic_logger_mt&lt;spdlog::async_factory&gt;(...)</code> and use the basic, non async one that doesn&rsquo;t spawn a new thread. That wouldn&rsquo;t be very educational though.</p>
+<p>What I&rsquo;ve learned is that when a thread is created, it inherits its parents <code>SigBlk</code>. So the straight forward approach would be to add the signal block before the child thread is spawned.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="p">...</span>
+</span></span><span class="line"><span class="cl"><span class="p">...</span>
+</span></span><span class="line"><span class="cl"><span class="p">...</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="n">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">SetupSignalBlock</span><span class="p">(</span><span class="n">event</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">EXIT_FAILURE</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">sd_event</span><span class="o">*</span> <span class="n">event</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// New thread spawned
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">auto</span> <span class="n">logfile</span> <span class="o">=</span> <span class="n">spdlog</span><span class="o">::</span><span class="n">basic_logger_mt</span><span class="o">&lt;</span><span class="n">spdlog</span><span class="o">::</span><span class="n">async_factory</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&#34;file_logger&#34;</span><span class="p">,</span> <span class="s">&#34;logs/log.txt&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Acquire default event loop object (for calling thread).
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="kt">int</span> <span class="n">event_loop_aquired</span> <span class="o">=</span> <span class="n">sd_event_default</span><span class="p">(</span><span class="o">&amp;</span><span class="n">event</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">event_loop_aquired</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">logfile</span><span class="o">-&gt;</span><span class="n">critical</span><span class="p">(</span><span class="s">&#34;Acquiring event loop failed&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">EXIT_FAILURE</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Let the sd event loop handle SIGINT
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">sd_event_add_signal</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="k">nullptr</span><span class="p">,</span> <span class="n">SIGINT</span><span class="p">,</span> <span class="n">signal_handler</span><span class="p">,</span> <span class="k">nullptr</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="p">...</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">EXIT_SUCCESS</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>Let&rsquo;s run the application! Now it looks a bit more like I expected.</p>
+<pre tabindex="0"><code>[2020-07-03 21:24:14.146] [info] Application started&lt;/samp&gt;&lt;br&gt;
+^C[2020-07-03 21:24:16.637] [info] Signal handler: Got Interrupt
+[2020-07-13 21:24:16.637] [info] Application is shutting down
+</code></pre><p>So, trust your friends, keep track of your threads, and know that you always can inspect your process status under <code>/proc</code>.</p>
+<h2 id="further-reading">Further reading</h2>
+<ul>
+<li><a href="https://www.gnu.org/software/libc/manual/html_node/Signal-Handling.html">GNU C library reference manual: 24 Signal Handling</a></li>
+<li><a href="https://tldp.org/LDP/Linux-Filesystem-Hierarchy/html/proc.html">Linux Filesystem Hierarchy: /proc</a></li>
+</ul>
+</article>
+
+        </main><footer id="footer">
+    Copyright © 2022 hilmer.io
+</footer>
+</body>
+</html>
