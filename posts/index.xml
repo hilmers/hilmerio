@@ -2,22 +2,22 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Posts on hilmer.io</title>
-    <link>https://example.com/posts/</link>
+    <link>https://hilmers.github.io/hilmerio/posts/</link>
     <description>Recent content in Posts on hilmer.io</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-US</language>
     <lastBuildDate>Fri, 02 Jul 2021 22:46:37 +0000</lastBuildDate>
     
-	<atom:link href="https://example.com/posts/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://hilmers.github.io/hilmerio/posts/index.xml" rel="self" type="application/rss+xml" />
     
     
     
     <item>
       <title>Who Handled My Signal?</title>
-      <link>https://example.com/who-handled-my-signal/</link>
+      <link>https://hilmers.github.io/hilmerio/who-handled-my-signal/</link>
       <pubDate>Fri, 02 Jul 2021 22:46:37 +0000</pubDate>
       
-      <guid>https://example.com/who-handled-my-signal/</guid>
+      <guid>https://hilmers.github.io/hilmerio/who-handled-my-signal/</guid>
       <description>&lt;p&gt;I’ve written a fair share of signal handlers in my life, some good and some worse. This time I didn’t even have to write one, but I still managed to mess it up.&lt;/p&gt;
 &lt;h2 id=&#34;blocking-signals-and-a-systemd-event-loop&#34;&gt;Blocking signals and a systemd event loop&lt;/h2&gt;
 &lt;p&gt;I was working on an application written in c++, running on an embedded system. On the embedded system my application had to use some IPC (Inter Process Communication) and the system had support for dbus communication. So I decided to run the application using the &lt;a href=&#34;https://www.freedesktop.org/software/systemd/man/sd-event.html&#34;&gt;systemd event loop&lt;/a&gt;. To exit the event loop, and thus shutting down the process, you just had to let the systemd event loop handle the SIGTERM. For a proper introduction to the sd-event-loop I suggest reading Lennart Poetterings &lt;a href=&#34;http://0pointer.net/blog/introducing-sd-event.html&#34;&gt;blog post&lt;/a&gt; on the subject.&lt;/p&gt;
@@ -194,10 +194,10 @@ SigIgn: 0000000000000000
     
     <item>
       <title>unordered_map vs. map (with an unordered focus)</title>
-      <link>https://example.com/unordered_map-vs.-map-with-an-unordered-focus/</link>
+      <link>https://hilmers.github.io/hilmerio/unordered_map-vs.-map-with-an-unordered-focus/</link>
       <pubDate>Tue, 02 Mar 2021 22:02:45 +0000</pubDate>
       
-      <guid>https://example.com/unordered_map-vs.-map-with-an-unordered-focus/</guid>
+      <guid>https://hilmers.github.io/hilmerio/unordered_map-vs.-map-with-an-unordered-focus/</guid>
       <description>&lt;p&gt;Why am prone to using &lt;code&gt;std::unordered_map&lt;/code&gt; over &lt;code&gt;std::map&lt;/code&gt;?&lt;/p&gt;
 &lt;p&gt;It all comes down to performance. The &lt;code&gt;map&lt;/code&gt; is normally implemented as a binary search tree and thus resulting in a worst case search time of &lt;strong&gt;O(log n)&lt;/strong&gt;, which is great.&lt;/p&gt;
 &lt;p&gt;The worst case search time for the &lt;code&gt;unordered_map&lt;/code&gt; is &lt;strong&gt;O(n)&lt;/strong&gt;. So why do I prefer it? Because the &lt;code&gt;unordered_map&lt;/code&gt; is implemented as a hash table and the average search time for the &lt;code&gt;unordered_map&lt;/code&gt; is constant, i.e. &lt;strong&gt;O(1)&lt;/strong&gt;.&lt;/p&gt;
@@ -214,7 +214,7 @@ SigIgn: 0000000000000000
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;fr&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;France&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;},&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;de&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Germany&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;};&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;img src=&#34;https://example.com/static/buckets.png&#34; alt=&#34;unordered_map bucket example&#34;&gt;&lt;/p&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;img src=&#34;https://hilmers.github.io/hilmerio/static/buckets.png&#34; alt=&#34;unordered_map bucket example&#34;&gt;&lt;/p&gt;
 &lt;p&gt;When the number of elements in the &lt;code&gt;unordered_map&lt;/code&gt; equals or exceeds the number of buckets, the &lt;code&gt;unordered_map&lt;/code&gt; is resized. The reason is to avoid the linked list to become to large, which would result in worse performance. This is what is called the load balance.&lt;/p&gt;
 &lt;p&gt;When the elements and the number of buckets are equal, the load balance is &lt;code&gt;1.0&lt;/code&gt;. When the load balance exceeds &lt;code&gt;1.0&lt;/code&gt; the table needs to be rehashed, which is costly. That would partly explain why inserting elements can be slower compared to the traditional map.&lt;/p&gt;
 &lt;p&gt;In the example above, the load balance would be: &lt;code&gt;4 elements/5 buckets = 0.8&lt;/code&gt;&lt;/p&gt;
@@ -226,10 +226,10 @@ SigIgn: 0000000000000000
     
     <item>
       <title>Sort anything with std::sort and a comparator</title>
-      <link>https://example.com/sort-anything-with-stdsort-and-a-comparator/</link>
+      <link>https://hilmers.github.io/hilmerio/sort-anything-with-stdsort-and-a-comparator/</link>
       <pubDate>Sun, 20 Dec 2020 19:40:20 +0000</pubDate>
       
-      <guid>https://example.com/sort-anything-with-stdsort-and-a-comparator/</guid>
+      <guid>https://hilmers.github.io/hilmerio/sort-anything-with-stdsort-and-a-comparator/</guid>
       <description>&lt;p&gt;This is part of the advent of code posts, so the puzzles referred can be viewed at &lt;a href=&#34;https://adventofcode.com/2020&#34;&gt;https://adventofcode.com/2020&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;For the day 5 part 2 puzzle I read the description a bit too fast (again). I thought I had to give the &amp;ldquo;binary space partitioning seat id&amp;rdquo; as the answer. So when I answered &lt;code&gt;&amp;quot;BBFFBBFRLL&amp;quot;&lt;/code&gt; both me and the Advent of code website was a bit confused.&lt;/p&gt;
 &lt;p&gt;I stopped what I was doing and read the instructions carefully and answered &lt;code&gt;524&lt;/code&gt;. Now everyone was happy.&lt;/p&gt;
@@ -259,10 +259,10 @@ BBFFFFFRLL
     
     <item>
       <title>Parsing text with regex in c&#43;&#43;</title>
-      <link>https://example.com/parsing-text-with-regex-in-c-/</link>
+      <link>https://hilmers.github.io/hilmerio/parsing-text-with-regex-in-c-/</link>
       <pubDate>Sat, 19 Dec 2020 20:32:34 +0000</pubDate>
       
-      <guid>https://example.com/parsing-text-with-regex-in-c-/</guid>
+      <guid>https://hilmers.github.io/hilmerio/parsing-text-with-regex-in-c-/</guid>
       <description>&lt;p&gt;Part of a series of posts I wrote after participating in the advent of code challenge&lt;/p&gt;
 &lt;p&gt;Parsing text is a skill every developer should have in its tool belt, for the simple reason that it is one of the most common tasks in this field.
 I have done quite a lot of parsing in my days, but never in c++.&lt;/p&gt;
@@ -329,10 +329,10 @@ Invalid: hcl:#c!a07d
     
     <item>
       <title>Reading file input in C&#43;&#43;</title>
-      <link>https://example.com/reading-file-input-in-c-/</link>
+      <link>https://hilmers.github.io/hilmerio/reading-file-input-in-c-/</link>
       <pubDate>Thu, 17 Dec 2020 19:03:22 +0000</pubDate>
       
-      <guid>https://example.com/reading-file-input-in-c-/</guid>
+      <guid>https://hilmers.github.io/hilmerio/reading-file-input-in-c-/</guid>
       <description>&lt;p&gt;This is part of a series of articles I wrote after taking part in the advent of code challenge.&lt;/p&gt;
 &lt;p&gt;All of the problems were dependent on some input, and for the sake of keeping the code clean I put the input in a text file outside of the source code.
 Day two I stumbled over &lt;a href=&#34;https://stackoverflow.com/questions/7868936/read-file-line-by-line-using-ifstream-in-c&#34;&gt;this&lt;/a&gt; stackoverflow post regarding reading from an input file and it has been a part of almost all the solutions.&lt;/p&gt;
@@ -392,18 +392,18 @@ Day two I stumbled over &lt;a href=&#34;https://stackoverflow.com/questions/7868
     
     <item>
       <title>Advent of Code</title>
-      <link>https://example.com/advent-of-code/</link>
+      <link>https://hilmers.github.io/hilmerio/advent-of-code/</link>
       <pubDate>Wed, 16 Dec 2020 18:22:30 +0000</pubDate>
       
-      <guid>https://example.com/advent-of-code/</guid>
+      <guid>https://hilmers.github.io/hilmerio/advent-of-code/</guid>
       <description>&lt;p&gt;I&amp;rsquo;ve heard about advent of code previous years but have never taken part. This year I decided to try and join in on as many challenges as my schedule allowed. I can prance with 12 points and 6 challenges fulfilled as of 15 days in to December.&lt;/p&gt;
 &lt;p&gt;Unfortunately I think this will be it for me. The challenges are fun, but I&amp;rsquo;m missing some sort of performance evaluation. Right now it is all about just finishing the challenges as quickly as possible when released, and no focus on who does the most elegant or effective solution. On the other hand, maybe that is the charm, just focusing on solving the problems with no performance anxiety.&lt;/p&gt;
 &lt;p&gt;In the upcoming days I will compile some blog posts on what I have learned.&lt;/p&gt;
 &lt;p&gt;The posts compiled after this post:&lt;/p&gt;
 &lt;ol&gt;
-&lt;li&gt;&lt;a href=&#34;https://example.com/reading-input-cpp&#34;&gt;Reading file input in c++&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://example.com/parsing-with-regex&#34;&gt;Parsing text with regex in c++&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://example.com/sort-anything-with-stdsort-and-comparator&#34;&gt;Sort anything with std::sort and a comparator&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://hilmers.github.io/hilmerio/reading-input-cpp&#34;&gt;Reading file input in c++&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://hilmers.github.io/hilmerio/parsing-with-regex&#34;&gt;Parsing text with regex in c++&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://hilmers.github.io/hilmerio/sort-anything-with-stdsort-and-comparator&#34;&gt;Sort anything with std::sort and a comparator&lt;/a&gt;&lt;/li&gt;
 &lt;/ol&gt;
 &lt;p&gt;All of my six solutions are present on &lt;a href=&#34;https://github.com/hilmers/advent_of_code_2020&#34;&gt;github&lt;/a&gt;&lt;/p&gt;
 </description>
